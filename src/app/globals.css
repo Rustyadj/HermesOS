@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-destructive: var(--destructive);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-panel: var(--panel);
+}
+
+:root {
+  --background: #0c0d0f;
+  --foreground: #e8eaed;
+  --card: #131518;
+  --card-foreground: #e8eaed;
+  --border: #1e2124;
+  --muted: #1a1d21;
+  --muted-foreground: #6b7280;
+  --accent: #1e2124;
+  --accent-foreground: #e8eaed;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --destructive: #ef4444;
+  --ring: #6366f1;
+  --sidebar: #0f1013;
+  --sidebar-border: #1a1d21;
+  --panel: #131518;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2d32;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3d42;
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.3);
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.15s ease-out;
+}

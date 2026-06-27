@@ -1,0 +1,160 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  createdAt DateTime  @default(now())
+  projects  Project[]
+  auditLogs AuditLog[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  status      String    @default("active")
+  userId      String
+  agents      String[]
+  tags        String[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chatRooms ChatRoom[]
+  workflows Workflow[]
+  notes     ObsidianNote[]
+  kanbanBoards KanbanBoard[]
+
+  @@map("projects")
+}
+
+model Agent {
+  id              String   @id @default(cuid())
+  name            String
+  role            String
+  avatar          String
+  color           String
+  model           String
+  systemPrompt    String?
+  toolPermissions String[]
+  memoryScope     String   @default("session")
+  status          String   @default("online")
+  createdAt       DateTime @default(now())
+
+  @@map("agents")
+}
+
+model ChatRoom {
+  id        String    @id @default(cuid())
+  name      String
+  projectId String?
+  agentIds  String[]
+  createdAt DateTime  @default(now())
+
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  @@map("chat_rooms")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  chatRoomId String
+  role       String
+  agentId    String?
+  content    String
+  toolCalls  Json?
+  reasoning  String?
+  createdAt  DateTime @default(now())
+
+  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Memory {
+  id              String                      @id @default(cuid())
+  type            String
+  scope           String
+  owner           String
+  content         String
+  tags            String[]
+  embedding       Unsupported("vector(1536)")?
+  confidence      Float                       @default(1.0)
+  importanceScore Float                       @default(0.5)
+  source          String
+  pinned          Boolean                     @default(false)
+  archived        Boolean                     @default(false)
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+
+  @@map("memories")
+}
+
+model KanbanBoard {
+  id        String   @id @default(cuid())
+  name      String
+  projectId String?
+  columns   Json
+  createdAt DateTime @default(now())
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@map("kanban_boards")
+}
+
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  nodes       Json
+  edges       Json
+  status      String   @default("draft")
+  projectId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@map("workflows")
+}
+
+model ObsidianNote {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  tags      String[]
+  backlinks String[]
+  projectId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@map("obsidian_notes")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  agentId   String
+  action    String
+  details   Json
+  userId    String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
