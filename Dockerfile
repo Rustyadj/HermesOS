@@ -23,7 +23,6 @@ COPY . .
 RUN npx prisma@7.8.0 generate
 
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DOCKER_BUILD=1
 
 # Placeholder values satisfy next-auth and Prisma at build time.
 # These are NOT used at runtime — supply real values via .env or docker-compose.
