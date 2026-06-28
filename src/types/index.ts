@@ -1,24 +1,3 @@
-export type ModuleId =
-  | "dashboard"
-  | "chat"
-  | "agents"
-  | "obsidian"
-  | "builder"
-  | "security"
-  | "workflows"
-  | "kanban"
-  | "orgchart"
-  | "marketing"
-  | "settings";
-
-export interface NavModule {
-  id: ModuleId;
-  label: string;
-  icon: string;
-  href: string;
-  description: string;
-}
-
 export type AgentStatus = "online" | "busy" | "idle" | "offline";
 
 export interface Agent {

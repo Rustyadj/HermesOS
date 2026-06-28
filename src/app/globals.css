@@ -17,9 +17,16 @@
   --color-sidebar: var(--sidebar);
   --color-sidebar-border: var(--sidebar-border);
   --color-panel: var(--panel);
+  --color-canvas: var(--canvas);
+  --color-canvas-foreground: var(--canvas-foreground);
+  --color-canvas-muted: var(--canvas-muted);
+  --color-canvas-card: var(--canvas-card);
+  --color-canvas-card-foreground: var(--canvas-card-foreground);
+  --color-canvas-card-border: var(--canvas-card-border);
 }
 
 :root {
+  /* Dark shell tokens (rail, topbar, panels) */
   --background: #0c0d0f;
   --foreground: #e8eaed;
   --card: #131518;
@@ -36,6 +43,14 @@
   --sidebar: #0f1013;
   --sidebar-border: #1a1d21;
   --panel: #131518;
+
+  /* Light canvas tokens (workspace main areas) */
+  --canvas: #f0f2f5;
+  --canvas-foreground: #111318;
+  --canvas-muted: #6b7280;
+  --canvas-card: #1a1d24;
+  --canvas-card-foreground: #e8eaed;
+  --canvas-card-border: #252830;
 }
 
 * {
