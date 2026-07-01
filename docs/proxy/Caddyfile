@@ -1,0 +1,31 @@
+# Caddyfile — Sentinel OS as default VPS UI
+# Place in /etc/caddy/Caddyfile (or import from it).
+# Caddy handles TLS automatically via Let's Encrypt.
+#
+# Assumes:
+#   - Sentinel OS runs on port 3000
+#   - Hermes Lisa legacy UI on port 4860
+#   - OpenClaw legacy UI on port 3001
+
+srv1427612.hstgr.cloud {
+    # ── Sentinel OS — default root ──────────────────────────────────────────
+    reverse_proxy /* 127.0.0.1:3000 {
+        header_up Host {upstream_hostport}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # ── Legacy Hermes Lisa UI ───────────────────────────────────────────────
+    handle_path /legacy/hermes* {
+        reverse_proxy 127.0.0.1:4860 {
+            header_up Host {upstream_hostport}
+        }
+    }
+
+    # ── Legacy OpenClaw UI ──────────────────────────────────────────────────
+    handle_path /legacy/openclaw* {
+        reverse_proxy 127.0.0.1:3001 {
+            header_up Host {upstream_hostport}
+        }
+    }
+}

@@ -11,3 +11,4 @@ import "./cybersecurity";
 import "./studio";
 import "./marketing";
 import "./settings";
+import "./vps";

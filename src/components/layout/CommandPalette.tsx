@@ -17,6 +17,7 @@ import {
   Settings,
   Network,
   Cpu,
+  Server,
   Zap,
   ArrowRight,
 } from "lucide-react";
@@ -27,7 +28,7 @@ import type { LucideIcon } from "lucide-react";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   LayoutDashboard, MessageSquare, Bot, BookOpen, Brain, Sparkles, Shield,
-  GitBranch, Kanban, BarChart3, Settings, Network, Cpu,
+  GitBranch, Kanban, BarChart3, Settings, Network, Cpu, Server,
 };
 
 interface CommandItem {
