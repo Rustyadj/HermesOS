@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
         apiKey: openrouterKey,
         baseURL: "https://openrouter.ai/api/v1",
         defaultHeaders: {
-          "HTTP-Referer": "https://hermesos.ai",
+          "HTTP-Referer": "https://sentinel-os.ai",
           "X-Title": "Sentinel OS",
         },
       });
