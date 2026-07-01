@@ -1,36 +1,175 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sentinel OS
 
-## Getting Started
+**The AI Operating System.**
 
-First, run the development server:
+Sentinel OS is not a dashboard. It is not a chatbot wrapper. It is not an admin panel.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+It is an operating system for AI work — the shell that manages agents, memory, knowledge, projects, and workflows across an organization.
+
+---
+
+## What It Is
+
+Sentinel OS provides a persistent, structured environment where AI agents operate alongside humans. It manages:
+
+- **Identity** — who is acting (user, agent, role)
+- **Context** — what they know (memory, knowledge, project state)
+- **Coordination** — how work flows (routing, approvals, delegation)
+- **Execution** — what they do (tools, models, integrations)
+
+The shell is the product. Everything else plugs into it.
+
+---
+
+## Why It Exists
+
+Most AI tools treat agents as features. Sentinel OS treats them as first-class citizens of a working environment.
+
+A typical AI dashboard gives you a chat box. Sentinel OS gives you:
+
+- Persistent agent memory scoped to session, project, workspace, or org
+- A knowledge graph with wiki-links and backlinks
+- An org chart that drives routing, approvals, and delegation
+- A module system that lets new capabilities plug in without touching the shell
+- A unified navigation rail that never duplicates itself
+
+---
+
+## Architecture
+
+```
+Sentinel OS
+├── Shell                  # Auth, routing, permissions, org engine
+│   ├── Navigation Rail    # Expandable left rail, icons-only collapsed
+│   ├── Module Loader      # Dynamic module registration and rendering
+│   ├── Org Engine         # Hierarchy, roles, approval routing
+│   ├── Memory Engine      # Multi-scoped memory (session → org)
+│   └── Knowledge Engine   # Notes, graph, search, backlinks
+│
+├── Core Modules           # Always present, cannot be removed
+│   ├── Home / Dashboard
+│   ├── Chat               # Multi-agent rooms, SSE streaming
+│   ├── Projects
+│   ├── Knowledge          # Obsidian-style notes + graph
+│   ├── Memory             # Memory inspector and reflection
+│   ├── Agents             # Agent management, config, logs
+│   ├── Organization       # Org chart management UI
+│   ├── Marketplace
+│   └── Settings
+│
+└── Installable Modules    # Optional, plug-in via registry
+    ├── Cybersecurity
+    ├── Studio
+    ├── Marketing
+    ├── ICF (Construction)
+    ├── CRM
+    ├── Finance
+    └── Custom (user-created)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full system design.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Module System
 
-## Learn More
+Every feature outside the core shell is a module. Modules self-register via a manifest:
 
-To learn more about Next.js, take a look at the following resources:
+```ts
+export const manifest: ModuleDefinition = {
+  id: "marketing",
+  label: "Marketing",
+  icon: "BarChart3",
+  href: "/marketing",
+  category: "installable",
+  order: 150,
+  component: () => import("./components/MarketingPage"),
+};
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The shell renders any registered module without knowing its internals.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+See [docs/MODULE_SYSTEM.md](docs/MODULE_SYSTEM.md) for the full spec.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Tech Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript 5 |
+| Styling | Tailwind CSS v4 |
+| Auth | NextAuth v5 (Google, GitHub, Credentials) |
+| ORM | Prisma v6 |
+| Database | PostgreSQL 16 + pgvector |
+| Cache | Redis 7 |
+| AI | Anthropic SDK, OpenAI SDK, OpenRouter |
+| State | Zustand |
+| Deployment | Docker Compose + Traefik |
+
+---
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run locally (requires .env.local)
+npm run dev
+
+# Lint
+npm run lint
+
+# Type check
+npx tsc --noEmit
+
+# Build
+npm run build
+```
+
+### Environment Variables
+
+```env
+DATABASE_URL=postgresql://...
+REDIS_URL=redis://...
+AUTH_SECRET=...
+AUTH_URL=https://your-domain.com
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+```
+
+---
+
+## Deployment
+
+Docker Compose with Traefik reverse proxy. See `docker-compose.yml`.
+
+```bash
+docker compose up -d
+```
+
+---
+
+## Roadmap
+
+See [docs/ROADMAP.md](docs/ROADMAP.md).
+
+**Phase 1 (current):** Platform foundation — shell, module system, auth, agents, memory architecture  
+**Phase 2:** Multi-agent collaboration — real-time rooms, agent-to-agent routing  
+**Phase 3:** Knowledge graph — full Obsidian-style notes with backlinks and canvas  
+**Phase 4:** Org engine — approval routing, delegation, role-based access  
+**Phase 5:** Marketplace — installable module distribution
+
+---
+
+## License
+
+Sentinel OS is licensed under the [Business Source License 1.1](LICENSE).
+
+© 2024 Rustyadj. All rights reserved.
+
+On 2028-01-01, this license converts to Apache 2.0.

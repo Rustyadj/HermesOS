@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -7,6 +8,7 @@ import {
   MessageSquare,
   Bot,
   BookOpen,
+  Brain,
   Wand2,
   Shield,
   GitBranch,
@@ -14,14 +16,13 @@ import {
   Network,
   BarChart3,
   Settings,
-  ChevronLeft,
-  ChevronRight,
   Cpu,
+  Pin,
+  PinOff,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { NAV_MODULES } from "@/lib/constants";
-import { useAppStore } from "@/store/useAppStore";
+import { moduleRegistry } from "@/lib/modules";
 import { useAgentStore } from "@/store/useAgentStore";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { STATUS_COLORS } from "@/lib/constants";
@@ -31,6 +32,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   MessageSquare,
   Bot,
   BookOpen,
+  Brain,
   Wand2,
   Shield,
   GitBranch,
@@ -42,98 +44,128 @@ const ICON_MAP: Record<string, LucideIcon> = {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { sidebarCollapsed, toggleSidebar } = useAppStore();
   const { agents } = useAgentStore();
+  const [pinned, setPinned] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const expanded = pinned || hovered;
   const onlineCount = agents.filter((a) => a.status === "online").length;
+  const navModules = moduleRegistry.getNav();
+  const bottomModules = moduleRegistry.getBottom();
+
+  const coreNav = navModules.filter((m) => m.category === "core");
+  const installableNav = navModules.filter((m) => m.category === "installable");
+
+  function handleMouseEnter() {
+    if (leaveTimer.current) clearTimeout(leaveTimer.current);
+    setHovered(true);
+  }
+
+  function handleMouseLeave() {
+    leaveTimer.current = setTimeout(() => setHovered(false), 120);
+  }
+
+  function NavItem({ mod }: { mod: ReturnType<typeof moduleRegistry.getNav>[number] }) {
+    const Icon = ICON_MAP[mod.icon] ?? LayoutDashboard;
+    const isActive = pathname.startsWith(mod.href);
+
+    if (!expanded) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              href={mod.href}
+              className={cn(
+                "flex items-center justify-center w-10 h-10 rounded-lg mx-auto transition-colors",
+                isActive
+                  ? "bg-indigo-500/20 text-indigo-400"
+                  : "text-[#5a5f6e] hover:bg-white/5 hover:text-[#c8cdd8]"
+              )}
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="text-xs">{mod.label}</TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Link
+        href={mod.href}
+        className={cn(
+          "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap overflow-hidden",
+          isActive
+            ? "bg-indigo-500/15 text-indigo-400"
+            : "text-[#7a8099] hover:bg-white/5 hover:text-[#c8cdd8]"
+        )}
+      >
+        <Icon className="w-4 h-4 shrink-0" />
+        <span className="truncate">{mod.label}</span>
+      </Link>
+    );
+  }
 
   return (
     <TooltipProvider delayDuration={200}>
       <aside
-        className={cn(
-          "flex flex-col h-full border-r border-[--sidebar-border] bg-[--sidebar] transition-all duration-200",
-          sidebarCollapsed ? "w-14" : "w-56"
-        )}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        style={{
+          width: expanded ? 224 : 56,
+          transition: "width 180ms cubic-bezier(0.4, 0, 0.2, 1)",
+          minWidth: expanded ? 224 : 56,
+        }}
+        className="flex flex-col h-full border-r border-[#181b22] bg-[#0c0e12] shrink-0 overflow-hidden z-20"
       >
         {/* Logo */}
-        <div
-          className={cn(
-            "flex items-center h-14 border-b border-[--sidebar-border] px-3 shrink-0",
-            sidebarCollapsed ? "justify-center" : "justify-between"
-          )}
-        >
-          {sidebarCollapsed ? (
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[--primary]/10">
-              <Cpu className="w-4 h-4 text-[--primary]" />
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-[--primary]/10">
-                  <Cpu className="w-3.5 h-3.5 text-[--primary]" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-[--foreground] leading-none">
-                    Sentinel OS
-                  </div>
-                  <div className="text-[10px] text-[--muted-foreground] leading-none mt-0.5">
-                    Mission Control
-                  </div>
-                </div>
+        <div className="flex items-center h-14 border-b border-[#181b22] px-3 shrink-0 overflow-hidden">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500/10 shrink-0">
+            <Cpu className="w-4 h-4 text-indigo-400" />
+          </div>
+          {expanded && (
+            <div className="ml-2.5 overflow-hidden">
+              <div className="text-sm font-semibold text-[#e2e5ed] leading-none whitespace-nowrap">
+                Sentinel OS
               </div>
-            </>
+              <div className="text-[10px] text-[#5a5f6e] leading-none mt-0.5 whitespace-nowrap">
+                Mission Control
+              </div>
+            </div>
           )}
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-          {NAV_MODULES.map((module) => {
-            const Icon = ICON_MAP[module.icon] ?? LayoutDashboard;
-            const isActive = pathname.startsWith(module.href);
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-0.5">
+          {coreNav.map((mod) => (
+            <NavItem key={mod.id} mod={mod} />
+          ))}
 
-            if (sidebarCollapsed) {
-              return (
-                <Tooltip key={module.id}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      href={module.href}
-                      className={cn(
-                        "flex items-center justify-center w-10 h-10 rounded-md mx-auto transition-colors",
-                        isActive
-                          ? "bg-[--primary]/15 text-[--primary]"
-                          : "text-[--muted-foreground] hover:bg-[--accent] hover:text-[--foreground]"
-                      )}
-                    >
-                      <Icon className="w-4 h-4" />
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{module.label}</TooltipContent>
-                </Tooltip>
-              );
-            }
-
-            return (
-              <Link
-                key={module.id}
-                href={module.href}
-                className={cn(
-                  "flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm transition-colors",
-                  isActive
-                    ? "bg-[--primary]/15 text-[--primary]"
-                    : "text-[--muted-foreground] hover:bg-[--accent] hover:text-[--foreground]"
-                )}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span className="truncate">{module.label}</span>
-              </Link>
-            );
-          })}
+          {installableNav.length > 0 && (
+            <>
+              <div className={cn(
+                "my-2 border-t border-[#181b22]",
+                !expanded && "mx-2"
+              )} />
+              {expanded && (
+                <div className="px-3 pb-1">
+                  <span className="text-[9px] uppercase tracking-widest text-[#3a3f50] font-medium">
+                    Modules
+                  </span>
+                </div>
+              )}
+              {installableNav.map((mod) => (
+                <NavItem key={mod.id} mod={mod} />
+              ))}
+            </>
+          )}
         </nav>
 
-        {/* Agent status strip */}
-        {!sidebarCollapsed && (
-          <div className="px-3 pb-2 border-t border-[--sidebar-border] pt-3">
-            <div className="text-[10px] uppercase tracking-widest text-[--muted-foreground] mb-2 px-0.5">
+        {/* Agent status */}
+        {expanded && (
+          <div className="px-3 pb-3 pt-2 border-t border-[#181b22]">
+            <div className="text-[9px] uppercase tracking-widest text-[#3a3f50] mb-2 font-medium">
               Active Agents
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -142,56 +174,67 @@ export function Sidebar() {
                   <TooltipTrigger asChild>
                     <div className="relative">
                       <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs border border-[--border]"
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs border border-[#1e2130]"
                         style={{ backgroundColor: agent.color + "22" }}
                       >
                         {agent.avatar}
                       </div>
                       <span
-                        className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[--sidebar] animate-pulse-dot"
-                        style={{
-                          backgroundColor:
-                            STATUS_COLORS[agent.status] ?? "#64748B",
-                        }}
+                        className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0c0e12]"
+                        style={{ backgroundColor: STATUS_COLORS[agent.status] ?? "#64748B" }}
                       />
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="top">
+                  <TooltipContent side="top" className="text-xs">
                     {agent.name} · {agent.status}
                   </TooltipContent>
                 </Tooltip>
               ))}
               {agents.length > 4 && (
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] bg-[--muted] text-[--muted-foreground] border border-[--border]">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] bg-[#1a1d21] text-[#5a5f6e] border border-[#1e2130]">
                   +{agents.length - 4}
                 </div>
               )}
             </div>
-            <div className="mt-2 text-[10px] text-[--muted-foreground]">
-              <span className="text-emerald-400">{onlineCount}</span> of{" "}
-              {agents.length} online
+            <div className="mt-1.5 text-[10px] text-[#3a3f50]">
+              <span className="text-emerald-400">{onlineCount}</span> / {agents.length} online
             </div>
           </div>
         )}
 
-        {/* Collapse toggle */}
-        <div className="border-t border-[--sidebar-border] p-2">
-          <button
-            onClick={toggleSidebar}
-            className={cn(
-              "flex items-center gap-2 w-full px-2 py-2 rounded-md text-xs text-[--muted-foreground] hover:bg-[--accent] hover:text-[--foreground] transition-colors",
-              sidebarCollapsed ? "justify-center" : ""
+        {/* Bottom: settings + pin toggle */}
+        <div className="border-t border-[#181b22] px-2 py-2 space-y-0.5">
+          {bottomModules.map((mod) => (
+            <NavItem key={mod.id} mod={mod} />
+          ))}
+
+          {/* Pin button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setPinned((p) => !p)}
+                className={cn(
+                  "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors w-full",
+                  pinned
+                    ? "text-indigo-400 bg-indigo-500/10"
+                    : "text-[#3a3f50] hover:bg-white/5 hover:text-[#7a8099]",
+                  !expanded && "justify-center px-0"
+                )}
+              >
+                {pinned ? <PinOff className="w-3.5 h-3.5 shrink-0" /> : <Pin className="w-3.5 h-3.5 shrink-0" />}
+                {expanded && (
+                  <span className="text-xs whitespace-nowrap">
+                    {pinned ? "Unpin sidebar" : "Pin open"}
+                  </span>
+                )}
+              </button>
+            </TooltipTrigger>
+            {!expanded && (
+              <TooltipContent side="right" className="text-xs">
+                {pinned ? "Unpin sidebar" : "Pin open"}
+              </TooltipContent>
             )}
-          >
-            {sidebarCollapsed ? (
-              <ChevronRight className="w-3.5 h-3.5" />
-            ) : (
-              <>
-                <ChevronLeft className="w-3.5 h-3.5" />
-                <span>Collapse</span>
-              </>
-            )}
-          </button>
+          </Tooltip>
         </div>
       </aside>
     </TooltipProvider>

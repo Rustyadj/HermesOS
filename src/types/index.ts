@@ -1,4 +1,4 @@
-export type ModuleId =
+export type CoreModuleId =
   | "dashboard"
   | "chat"
   | "agents"
@@ -10,6 +10,8 @@ export type ModuleId =
   | "orgchart"
   | "marketing"
   | "settings";
+
+export type ModuleId = CoreModuleId | string;
 
 export interface NavModule {
   id: ModuleId;

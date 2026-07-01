@@ -20,7 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Workspace */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          <main className="flex-1 overflow-auto min-w-0">{children}</main>
+          <main className="flex-1 overflow-hidden min-w-0 bg-[--background]">{children}</main>
 
           {/* Right panel */}
           {rightPanelOpen && <RightPanel />}
