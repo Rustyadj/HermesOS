@@ -2,10 +2,10 @@ import { moduleRegistry } from "@/lib/modules/registry";
 
 moduleRegistry.register({
   id: "builder",
-  label: "Studio",
-  icon: "Wand2",
+  label: "AI Studio",
+  icon: "Sparkles",
   href: "/builder",
-  description: "AI creation environment — build UI components with AI",
+  description: "Build engine — websites, apps, modules, agents, APIs",
   category: "core",
   order: 9,
 });

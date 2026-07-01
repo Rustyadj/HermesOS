@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Bell, Plus, ChevronDown, Zap } from "lucide-react";
+import { Search, Bell, Plus, ChevronDown, Zap, Cpu } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useAppStore } from "@/store/useAppStore";
 import { useAgentStore } from "@/store/useAgentStore";
@@ -12,7 +12,7 @@ import { usePathname, useRouter } from "next/navigation";
 export function TopBar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { setCommandBarOpen } = useAppStore();
+  const { setCommandBarOpen, sidebarExpanded } = useAppStore();
   const { agents } = useAgentStore();
   const { data: session } = useSession();
 
@@ -21,36 +21,55 @@ export function TopBar() {
 
   const user = session?.user;
   const initials = user?.name
-    ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+    ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "?";
 
   return (
     <header className="h-14 border-b border-[--border] bg-[--card] flex items-center px-4 gap-3 shrink-0">
-      {/* Module breadcrumb */}
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="text-sm font-medium text-[--foreground] truncate">
-          {activeModule?.label ?? "Mission Control"}
-        </span>
-        {activeModule && (
-          <>
-            <span className="text-[--muted-foreground] text-xs">/</span>
-            <span className="text-xs text-[--muted-foreground] truncate hidden sm:block">
-              {activeModule.description}
-            </span>
-          </>
-        )}
-      </div>
+
+      {/* Sentinel OS identity — shown when sidebar is collapsed */}
+      {!sidebarExpanded && (
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-500/10">
+            <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+          </div>
+          <span className="text-sm font-semibold text-[--foreground] whitespace-nowrap hidden sm:block">
+            Sentinel OS
+          </span>
+          {activeModule && (
+            <>
+              <span className="text-[--muted-foreground] text-xs">/</span>
+              <span className="text-xs text-[--muted-foreground] truncate hidden sm:block">
+                {activeModule.label}
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Module breadcrumb — shown only when sidebar is expanded */}
+      {sidebarExpanded && activeModule && (
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-medium text-[--foreground] truncate">
+            {activeModule.label}
+          </span>
+          {activeModule.description && (
+            <>
+              <span className="text-[--muted-foreground] text-xs">/</span>
+              <span className="text-xs text-[--muted-foreground] truncate hidden lg:block">
+                {activeModule.description}
+              </span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Command search */}
       <button
         onClick={() => setCommandBarOpen(true)}
         className={cn(
-          "flex-1 max-w-sm mx-auto flex items-center gap-2 h-8 px-3 rounded-md border border-[--border] bg-[--muted] text-[--muted-foreground] text-xs hover:border-[--primary]/50 hover:text-[--foreground] transition-colors"
+          "flex-1 max-w-sm mx-auto flex items-center gap-2 h-8 px-3 rounded-md border border-[--border] bg-[--muted]",
+          "text-[--muted-foreground] text-xs hover:border-[--primary]/50 hover:text-[--foreground] transition-colors"
         )}
       >
         <Search className="w-3.5 h-3.5 shrink-0" />
@@ -62,29 +81,25 @@ export function TopBar() {
 
       {/* Right actions */}
       <div className="flex items-center gap-2 ml-auto">
-        {/* Active ops indicator */}
         {busyAgents.length > 0 && (
           <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
-            <Zap className="w-3 h-3 text-amber-400 animate-pulse-dot" />
+            <Zap className="w-3 h-3 text-amber-400 animate-pulse" />
             <span className="text-xs text-amber-400">
               {busyAgents.length} agent{busyAgents.length > 1 ? "s" : ""} running
             </span>
           </div>
         )}
 
-        {/* New action */}
         <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs">
           <Plus className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">New</span>
         </Button>
 
-        {/* Notifications */}
         <Button size="icon" variant="ghost" className="h-8 w-8 relative">
           <Bell className="w-4 h-4" />
           <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[--primary]" />
         </Button>
 
-        {/* User avatar */}
         <button
           onClick={() => router.push("/settings")}
           className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-md hover:bg-[--accent] transition-colors"

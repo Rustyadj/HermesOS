@@ -3,6 +3,7 @@
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { RightPanel } from "./RightPanel";
+import { CommandPalette } from "./CommandPalette";
 import { useAppStore } from "@/store/useAppStore";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -10,6 +11,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-full w-full overflow-hidden">
+      <CommandPalette />
       {/* Left sidebar */}
       <Sidebar />
 

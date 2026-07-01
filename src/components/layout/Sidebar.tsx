@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -19,11 +19,14 @@ import {
   Cpu,
   Pin,
   PinOff,
+  Sparkles,
+  DollarSign,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { moduleRegistry } from "@/lib/modules";
 import { useAgentStore } from "@/store/useAgentStore";
+import { useAppStore } from "@/store/useAppStore";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { STATUS_COLORS } from "@/lib/constants";
 
@@ -40,22 +43,33 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Network,
   BarChart3,
   Settings,
+  Sparkles,
+  Cpu,
 };
 
 export function Sidebar() {
   const pathname = usePathname();
   const { agents } = useAgentStore();
+  const { setSidebarExpanded } = useAppStore();
   const [pinned, setPinned] = useState(false);
   const [hovered, setHovered] = useState(false);
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const expanded = pinned || hovered;
+
+  useEffect(() => {
+    setSidebarExpanded(expanded);
+  }, [expanded, setSidebarExpanded]);
+
   const onlineCount = agents.filter((a) => a.status === "online").length;
   const navModules = moduleRegistry.getNav();
   const bottomModules = moduleRegistry.getBottom();
 
   const coreNav = navModules.filter((m) => m.category === "core");
   const installableNav = navModules.filter((m) => m.category === "installable");
+
+  // Find Hermes Lisa for status card
+  const lisaAgent = agents.find((a) => a.id === "hermes-lisa") ?? agents[0];
 
   function handleMouseEnter() {
     if (leaveTimer.current) clearTimeout(leaveTimer.current);
@@ -119,7 +133,7 @@ export function Sidebar() {
         }}
         className="flex flex-col h-full border-r border-[#181b22] bg-[#0c0e12] shrink-0 overflow-hidden z-20"
       >
-        {/* Logo */}
+        {/* Logo — only visible when expanded; TopBar shows it when collapsed */}
         <div className="flex items-center h-14 border-b border-[#181b22] px-3 shrink-0 overflow-hidden">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500/10 shrink-0">
             <Cpu className="w-4 h-4 text-indigo-400" />
@@ -144,10 +158,7 @@ export function Sidebar() {
 
           {installableNav.length > 0 && (
             <>
-              <div className={cn(
-                "my-2 border-t border-[#181b22]",
-                !expanded && "mx-2"
-              )} />
+              <div className={cn("my-2 border-t border-[#181b22]", !expanded && "mx-2")} />
               {expanded && (
                 <div className="px-3 pb-1">
                   <span className="text-[9px] uppercase tracking-widest text-[#3a3f50] font-medium">
@@ -162,43 +173,67 @@ export function Sidebar() {
           )}
         </nav>
 
-        {/* Agent status */}
-        {expanded && (
-          <div className="px-3 pb-3 pt-2 border-t border-[#181b22]">
-            <div className="text-[9px] uppercase tracking-widest text-[#3a3f50] mb-2 font-medium">
-              Active Agents
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {agents.slice(0, 4).map((agent) => (
-                <Tooltip key={agent.id}>
-                  <TooltipTrigger asChild>
-                    <div className="relative">
-                      <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs border border-[#1e2130]"
-                        style={{ backgroundColor: agent.color + "22" }}
-                      >
-                        {agent.avatar}
-                      </div>
+        {/* Hermes Lisa status card — Phase 8 */}
+        {lisaAgent && (
+          <div className="border-t border-[#181b22] px-2 py-2">
+            {expanded ? (
+              <div className="bg-[#0f1117] border border-[#1e2130] rounded-xl p-2.5">
+                <div className="flex items-center gap-2 mb-2">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm border border-[#1e2130] shrink-0"
+                    style={{ backgroundColor: lisaAgent.color + "22" }}
+                  >
+                    {lisaAgent.avatar}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-[#c8cdd8] truncate">{lisaAgent.name}</div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
                       <span
-                        className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0c0e12]"
-                        style={{ backgroundColor: STATUS_COLORS[agent.status] ?? "#64748B" }}
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: STATUS_COLORS[lisaAgent.status] ?? "#64748B" }}
                       />
+                      <span className="text-[10px] text-[#5a5f6e] capitalize">{lisaAgent.status}</span>
                     </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">
-                    {agent.name} · {agent.status}
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-              {agents.length > 4 && (
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] bg-[#1a1d21] text-[#5a5f6e] border border-[#1e2130]">
-                  +{agents.length - 4}
+                  </div>
                 </div>
-              )}
-            </div>
-            <div className="mt-1.5 text-[10px] text-[#3a3f50]">
-              <span className="text-emerald-400">{onlineCount}</span> / {agents.length} online
-            </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-[#3a3f50]">Model</span>
+                    <span className="text-[#7a8099] truncate ml-2">{lisaAgent.model}</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-[#3a3f50]">Memory</span>
+                    <span className="text-[#7a8099]">{lisaAgent.memoryScope}</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-[#3a3f50] flex items-center gap-1">
+                      <DollarSign className="w-2.5 h-2.5" />Today
+                    </span>
+                    <span className="text-emerald-400">$0.12</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="relative mx-auto w-fit">
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm border border-[#1e2130] cursor-pointer"
+                      style={{ backgroundColor: lisaAgent.color + "22" }}
+                    >
+                      {lisaAgent.avatar}
+                    </div>
+                    <span
+                      className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0c0e12]"
+                      style={{ backgroundColor: STATUS_COLORS[lisaAgent.status] ?? "#64748B" }}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-xs">
+                  {lisaAgent.name} · {lisaAgent.status}
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         )}
 
@@ -208,7 +243,6 @@ export function Sidebar() {
             <NavItem key={mod.id} mod={mod} />
           ))}
 
-          {/* Pin button */}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
