@@ -6,7 +6,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { useAgentStore } from "@/store/useAgentStore";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { NAV_MODULES } from "@/lib/constants";
+import { moduleRegistry } from "@/lib/modules";
 import { usePathname, useRouter } from "next/navigation";
 
 export function TopBar() {
@@ -16,7 +16,7 @@ export function TopBar() {
   const { agents } = useAgentStore();
   const { data: session } = useSession();
 
-  const activeModule = NAV_MODULES.find((m) => pathname.startsWith(m.href));
+  const activeModule = moduleRegistry.getAll().find((m) => pathname.startsWith(m.href));
   const busyAgents = agents.filter((a) => a.status === "busy");
 
   const user = session?.user;

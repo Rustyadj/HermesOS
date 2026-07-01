@@ -1,5 +1,7 @@
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
+import { Suspense } from "react";
+import { CredentialsForm } from "./CredentialsForm";
 
 function GoogleIcon() {
   return (
@@ -44,6 +46,18 @@ export default function SignInPage({
         {/* Card */}
         <div className="bg-[--card] border border-[--border] rounded-xl p-6 space-y-3">
           <ErrorBanner searchParams={searchParams} />
+
+          {/* Credentials (email + password) */}
+          <Suspense>
+            <CredentialsForm />
+          </Suspense>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-[--border]" />
+            <span className="text-[10px] text-[--muted-foreground] uppercase tracking-widest">or continue with</span>
+            <div className="flex-1 h-px bg-[--border]" />
+          </div>
 
           {/* Google */}
           <form
@@ -117,6 +131,7 @@ async function ErrorBanner({
     Configuration:
       "OAuth provider not configured. Set GOOGLE_CLIENT_ID / GITHUB_CLIENT_ID in .env.local.",
     AccessDenied: "Access denied. Contact your administrator.",
+    CredentialsSignin: "Invalid email or password.",
     Default: "Authentication failed. Please try again.",
   };
 

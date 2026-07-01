@@ -1,10 +1,10 @@
 import { create } from "zustand";
-import type { ModuleId, Project } from "@/types";
+import type { CoreModuleId, Project } from "@/types";
 
 type RightPanelTab = "memory" | "files" | "tasks" | "activity";
 
 interface AppState {
-  currentModule: ModuleId;
+  currentModule: CoreModuleId;
   sidebarCollapsed: boolean;
   rightPanelOpen: boolean;
   rightPanelTab: RightPanelTab;
@@ -13,7 +13,7 @@ interface AppState {
 }
 
 interface AppActions {
-  setCurrentModule: (module: ModuleId) => void;
+  setCurrentModule: (module: CoreModuleId) => void;
   toggleSidebar: () => void;
   setRightPanelOpen: (open: boolean) => void;
   setRightPanelTab: (tab: RightPanelTab) => void;

@@ -20,22 +20,23 @@
 }
 
 :root {
-  --background: #0c0d0f;
-  --foreground: #e8eaed;
-  --card: #131518;
-  --card-foreground: #e8eaed;
-  --border: #1e2124;
-  --muted: #1a1d21;
-  --muted-foreground: #6b7280;
-  --accent: #1e2124;
-  --accent-foreground: #e8eaed;
+  --background: #ECEEF2;
+  --foreground: #1a1d26;
+  --card: #161920;
+  --card-foreground: #e2e5ed;
+  --border: #e0e3ea;
+  --muted: #dde0e8;
+  --muted-foreground: #7a8099;
+  --accent: #e4e7ef;
+  --accent-foreground: #1a1d26;
   --primary: #6366f1;
   --primary-foreground: #ffffff;
   --destructive: #ef4444;
   --ring: #6366f1;
-  --sidebar: #0f1013;
-  --sidebar-border: #1a1d21;
-  --panel: #131518;
+  --sidebar: #0c0e12;
+  --sidebar-border: #181b22;
+  --panel: #161920;
+  --card-border: #1e2130;
 }
 
 * {
@@ -61,11 +62,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2d32;
+  background: #c5c8d0;
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3d42;
+  background: #a8adb8;
 }
 
 ::selection {

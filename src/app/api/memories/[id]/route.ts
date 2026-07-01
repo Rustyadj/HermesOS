@@ -4,6 +4,29 @@ import { requireUser } from "@/lib/current-user";
 
 type Params = { params: Promise<{ id: string }> };
 
+export async function GET(_req: NextRequest, { params }: Params) {
+  try {
+    await requireUser();
+    const { id } = await params;
+    const memory = await db.memory.findUnique({
+      where: { id },
+      select: {
+        id: true, type: true, scope: true, owner: true, content: true,
+        tags: true, confidence: true, importanceScore: true, source: true,
+        pinned: true, archived: true, createdAt: true, updatedAt: true,
+      },
+    });
+    if (!memory) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(memory);
+  } catch (err) {
+    if (err instanceof Error && err.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    console.error("[GET /api/memories/[id]]", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     await requireUser();
@@ -13,6 +36,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       archived: boolean;
       content: string;
       tags: string[];
+      confidence: number;
+      importanceScore: number;
     }>;
 
     const memory = await db.memory.update({
