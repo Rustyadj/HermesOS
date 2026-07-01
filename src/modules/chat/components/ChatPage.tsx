@@ -555,7 +555,7 @@ function RightPanel({
 
 export function ChatPage() {
   const { agents } = useAgentStore();
-  const { memories } = useMemoryStore();
+  const { memories, setMemories, hydrated, setHydrated } = useMemoryStore();
   const { anthropicKey, openaiKey, openrouterKey } = useKeyStore();
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -592,20 +592,29 @@ export function ChatPage() {
     confidence: m.confidence,
   }));
 
-  // Load projects + rooms on mount
+  // Load projects, rooms, and memories on mount
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    void Promise.all([
-      fetch("/api/projects")
-        .then((r) => r.json())
-        .catch(() => []),
-      fetch("/api/rooms")
-        .then((r) => r.json())
-        .catch(() => []),
-    ]).then(([proj, rm]) => {
+    const fetches: Promise<unknown>[] = [
+      fetch("/api/projects").then((r) => r.json()).catch(() => []),
+      fetch("/api/rooms").then((r) => r.json()).catch(() => []),
+    ];
+    if (!hydrated) {
+      fetches.push(
+        fetch("/api/memories?limit=50").then((r) => r.json()).catch(() => [])
+      );
+    }
+    void Promise.all(fetches).then(([proj, rm, mems]) => {
       setProjects(proj as Project[]);
       setRooms(rm as Room[]);
+      if (!hydrated && Array.isArray(mems)) {
+        setMemories(mems as Parameters<typeof setMemories>[0]);
+        setHydrated(true);
+      }
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Auto-scroll
   useEffect(() => {
