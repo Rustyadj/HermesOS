@@ -21,13 +21,25 @@ services:
     build:
       context: .
       target: builder
-    command: npx prisma@7.8.0 migrate deploy
+    command: npx prisma@6 migrate deploy
     environment:
       DATABASE_URL: postgresql://hermes:hermes@postgres:5432/hermesos
     depends_on:
       postgres:
         condition: service_healthy
     restart: on-failure
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   app:
     build:
@@ -37,13 +49,31 @@ services:
     ports:
       - "3000:3000"
     environment:
+      NODE_ENV: production
       DATABASE_URL: postgresql://hermes:hermes@postgres:5432/hermesos
+      REDIS_URL: redis://redis:6379
       AUTH_SECRET: ${AUTH_SECRET}
       AUTH_URL: ${AUTH_URL:-http://localhost:3000}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      # VPS control plane
+      SENTINEL_DEFAULT_UI: ${SENTINEL_DEFAULT_UI:-true}
+      CONTROL_PLANE_OWNERS: ${CONTROL_PLANE_OWNERS:-}
+      HERMES_ENDPOINT: ${HERMES_ENDPOINT:-http://host.docker.internal:4860}
+      HERMES_CLINT_ENDPOINT: ${HERMES_CLINT_ENDPOINT:-http://host.docker.internal:4861}
+      OPENCLAW_ENDPOINT: ${OPENCLAW_ENDPOINT:-http://host.docker.internal:3001}
+      HERMES_LISA_MODEL: ${HERMES_LISA_MODEL:-claude-sonnet-4-6}
+      HERMES_CLINT_MODEL: ${HERMES_CLINT_MODEL:-claude-sonnet-4-6}
+      OPENCLAW_MODEL: ${OPENCLAW_MODEL:-claude-opus-4-8}
+      AGENT_CONFIG_DIR: /opt/sentinel-os/agents
+      AGENT_LOG_DIR: /opt/sentinel-os/logs
+    volumes:
+      - agent_configs:/opt/sentinel-os/agents
+      - agent_logs:/opt/sentinel-os/logs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
       interval: 15s
@@ -55,6 +85,29 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  # ── Caddy reverse proxy (optional — comment out if using Nginx) ────────────
+  # Uncomment to enable TLS termination + legacy route proxying.
+  # caddy:
+  #   image: caddy:2-alpine
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./docs/proxy/Caddyfile.docker:/etc/caddy/Caddyfile:ro
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+  #   depends_on:
+  #     app:
+  #       condition: service_healthy
 
 volumes:
   postgres_data:
+  redis_data:
+  agent_configs:
+  agent_logs:
+  # caddy_data:
+  # caddy_config:

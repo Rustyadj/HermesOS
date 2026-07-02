@@ -2,9 +2,58 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/current-user";
 
+// ─── Memory scope isolation ───────────────────────────────────────────────────
+// Rules:
+//   session   → only the requesting user's own session memories
+//   user      → only the requesting user's own memories
+//   project   → only if projectId matches requested owner param
+//   workspace → only workspace members (currently: all authenticated users)
+//   org       → all authenticated users
+//   agent     → all authenticated users (agent's own scope)
+//   public    → all authenticated users
+
+const GLOBAL_SCOPES = new Set(["org", "workspace", "public", "agent"]);
+
+function buildScopeFilter(
+  scope: string | null,
+  userId: string,
+  requestedOwner: string | null
+): Record<string, unknown> {
+  if (!scope) {
+    // No scope filter — return records visible to this user
+    return {
+      OR: [
+        { scope: { in: [...GLOBAL_SCOPES] } },
+        { owner: userId },
+        { owner: requestedOwner ?? undefined },
+      ],
+    };
+  }
+
+  if (GLOBAL_SCOPES.has(scope)) {
+    return { scope };
+  }
+
+  // session and user scope: enforce owner = current user only
+  if (scope === "session" || scope === "user") {
+    return { scope, owner: userId };
+  }
+
+  // project scope: allow if requesting own owner or if no owner filter
+  if (scope === "project") {
+    if (requestedOwner && requestedOwner !== userId) {
+      // Allow querying project memories by agent id or project id (not another user)
+      return { scope, owner: requestedOwner };
+    }
+    return { scope };
+  }
+
+  return { scope };
+}
+
 export async function GET(req: NextRequest) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const { searchParams } = new URL(req.url);
     const scope = searchParams.get("scope");
     const type = searchParams.get("type");
@@ -12,14 +61,15 @@ export async function GET(req: NextRequest) {
     const pinned = searchParams.get("pinned");
     const archived = searchParams.get("archived") === "true";
     const search = searchParams.get("q");
-    const limit = parseInt(searchParams.get("limit") ?? "100");
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "100"), 500);
+
+    const scopeFilter = buildScopeFilter(scope, user.id, owner);
 
     const memories = await db.memory.findMany({
       where: {
         archived,
-        ...(scope ? { scope } : {}),
+        ...scopeFilter,
         ...(type ? { type } : {}),
-        ...(owner ? { owner } : {}),
         ...(pinned === "true" ? { pinned: true } : {}),
         ...(search ? {
           OR: [
@@ -49,7 +99,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const body = await req.json() as {
       type: string; scope: string; owner: string;
       content: string; tags?: string[];
@@ -59,6 +109,12 @@ export async function POST(req: NextRequest) {
     if (!type || !scope || !owner || !content || !source) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
+
+    // Enforce: session/user scope memories must be owned by the current user
+    if ((scope === "session" || scope === "user") && owner !== user.id) {
+      return NextResponse.json({ error: "Cannot create session/user memory for another user" }, { status: 403 });
+    }
+
     const memory = await db.memory.create({
       data: { type, scope, owner, content, tags, confidence, importanceScore, source },
       select: {
