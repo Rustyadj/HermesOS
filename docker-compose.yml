@@ -1,4 +1,47 @@
 services:
+  traefik:
+    image: traefik:v3.3
+    restart: unless-stopped
+    command:
+      # API / dashboard
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      # Entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Redirect all HTTP → HTTPS
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      # Let's Encrypt (ACME)
+      - "--certificatesresolvers.le.acme.email=${ACME_EMAIL:-rustyadj@gmail.com}"
+      - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.le.acme.tlschallenge=true"
+      # Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=sentinel_net"
+      # Logs
+      - "--log.level=INFO"
+      - "--accesslog=true"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_certs:/letsencrypt
+    networks:
+      - sentinel_net
+    labels:
+      # Traefik dashboard — protected by basic auth or IP restriction
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`${DOMAIN:-srv1427612.hstgr.cloud}`) && PathPrefix(`/traefik`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=le"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=strip-traefik"
+      - "traefik.http.middlewares.strip-traefik.stripprefix.prefixes=/traefik"
+
   postgres:
     image: pgvector/pgvector:pg16
     restart: unless-stopped
@@ -9,8 +52,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5432:5432"
+    networks:
+      - sentinel_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hermes -d hermesos"]
       interval: 5s
@@ -24,6 +67,8 @@ services:
     command: npx prisma@6 migrate deploy
     environment:
       DATABASE_URL: postgresql://hermes:hermes@postgres:5432/hermesos
+    networks:
+      - sentinel_net
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,6 +80,8 @@ services:
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
+    networks:
+      - sentinel_net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -46,19 +93,18 @@ services:
       context: .
       target: runner
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://hermes:hermes@postgres:5432/hermesos
       REDIS_URL: redis://redis:6379
       AUTH_SECRET: ${AUTH_SECRET}
-      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      AUTH_URL: ${AUTH_URL:-https://srv1427612.hstgr.cloud}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
-      # VPS control plane
       SENTINEL_DEFAULT_UI: ${SENTINEL_DEFAULT_UI:-true}
       CONTROL_PLANE_OWNERS: ${CONTROL_PLANE_OWNERS:-}
       HERMES_ENDPOINT: ${HERMES_ENDPOINT:-http://host.docker.internal:4860}
@@ -74,6 +120,8 @@ services:
       - agent_logs:/opt/sentinel-os/logs
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - sentinel_net
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
       interval: 15s
@@ -87,27 +135,25 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      # Main HTTPS route — Sentinel at /
+      - "traefik.http.routers.sentinel.rule=Host(`${DOMAIN:-srv1427612.hstgr.cloud}`)"
+      - "traefik.http.routers.sentinel.entrypoints=websecure"
+      - "traefik.http.routers.sentinel.tls.certresolver=le"
+      - "traefik.http.routers.sentinel.service=sentinel"
+      - "traefik.http.services.sentinel.loadbalancer.server.port=3000"
+      # Health check on the backend
+      - "traefik.http.services.sentinel.loadbalancer.healthcheck.path=/api/health"
+      - "traefik.http.services.sentinel.loadbalancer.healthcheck.interval=15s"
 
-  # ── Caddy reverse proxy (optional — comment out if using Nginx) ────────────
-  # Uncomment to enable TLS termination + legacy route proxying.
-  # caddy:
-  #   image: caddy:2-alpine
-  #   restart: unless-stopped
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./docs/proxy/Caddyfile.docker:/etc/caddy/Caddyfile:ro
-  #     - caddy_data:/data
-  #     - caddy_config:/config
-  #   depends_on:
-  #     app:
-  #       condition: service_healthy
+networks:
+  sentinel_net:
+    driver: bridge
 
 volumes:
   postgres_data:
   redis_data:
   agent_configs:
   agent_logs:
-  # caddy_data:
-  # caddy_config:
+  traefik_certs:
